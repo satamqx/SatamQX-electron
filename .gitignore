@@ -1,3 +1,4 @@
 node_modules
 __pycache__
 node_modules/electron/dist/electron.exe
+bfg-1.14.0.jar
