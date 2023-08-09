@@ -5,6 +5,15 @@
   "scripts": {
     "start": "electron main.js"
   },
+  "build": {
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "satamqx",
+        "repo": "your-repo-name"
+      }
+    ]
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
