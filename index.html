@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>SatamQX Beta Electron</title>
+    <style>
+        #stickyHeader {
+            position: sticky;
+            top: 0;
+            background-color: #1c1e26;
+            z-index: 1000;
+            padding: 10px 0;
+            direction: rtl; /* هذه الخاصية تجعل العناصر تبدأ من اليمين */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1c1e26;
+            padding: 20px;
+            color: #e1e1e6;
+        }
+
+        h2 {
+            border-bottom: 2px solid #525865;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            color: #e1e1e6;
+        }
+
+        #servicesList {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .service-card {
+            background-color: #2e313b;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+        }
+        .service-card label {
+            position: relative;
+            display: inline-block;
+            white-space: nowrap;
+            overflow: hidden;
+            max-width: 150%; 
+            vertical-align: middle;
+        }
+
+
+        .service-card:hover label {
+            animation: marquee 8s linear infinite;
+        }
+
+        @keyframes marquee {
+            0%   { text-indent: 0; }
+            50%  { text-indent: -100%; }
+            100% { text-indent: 0; }
+        }
+
+
+
+
+        .service-status.running {
+            color: #4caf50;
+        }
+
+        .service-status.stopped {
+            color: #f44336;
+        }
+
+        button {
+            background-color: #3f51b5;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px; /* تم تغيير margin-right إلى margin-left */
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #283593;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border: none;
+            border-radius: 3px;
+            background-color: #2e313b;
+            margin-left: 10px; /* تم تغيير margin-right إلى margin-left */
+            color: #e1e1e6;
+        }
+
+        input[type="text"]::placeholder {
+            color: #525865;
+        }
+
+        label {
+            margin-left: 10px; /* تم تغيير margin-right إلى margin-left */
+            color: #adadad;
+        }
+        /* تخصيص شكل السكرول بار */
+        ::-webkit-scrollbar {
+            width: 10px; /* عرض السكرول بار */
+        }
+
+        /* شكل الشريط الخاص بالسكرول بار */
+        ::-webkit-scrollbar-track {
+            background: #2e313b; /* لون خلفية الشريط */
+            border-radius: 10px; /* تقريب الزوايا */
+        }
+
+        /* شكل المؤشر الذي يتحرك في السكرول بار */
+        ::-webkit-scrollbar-thumb {
+            background: #525865; /* لون المؤشر */
+            border-radius: 10px; /* تقريب الزوايا */
+        }
+
+        /* شكل المؤشر عند الحواف */
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a4c54; /* لون المؤشر عند التحويم */
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="stickyHeader">
+        <h2>إدارة الخدمات: الإجمالي <span id="totalServices">0</span> | تعمل <span id="runningServices">0</span> | متوقفة <span id="stoppedServices">0</span></h2>
+        <input type="text" id="searchInput" placeholder="البحث عن الخدمة...">
+        <button id="restartButton">اعادة تشغيل الخدمة</button>
+        <button id="stopButton">ايقاف الخدمة</button>
+        <button id="startButton">تشغيل الخدمة</button>
+    </div>
+
+    <div id="servicesList">
+        <!-- This area will be populated with service cards dynamically -->
+    </div>
+    <span id="status-{service-name}" class="service-status">Checking...</span>
+    <!-- باقي الكود هنا -->
+</body>
+</html>
+
+
+
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        let totalServices = 0;
+        let totalRunningServices = 0;
+        let totalStoppedServices = 0;
+
+        function fetchServices() {
+        ipcRenderer.invoke('getAllServices').then(services => {
+            if (services) {
+                allServices = services;
+                totalServices = allServices.length;
+                // حساب عدد الخدمات التي تعمل
+                totalRunningServices = allServices.filter(service => service.status).length;
+                totalStoppedServices = totalServices - totalRunningServices;
+                displayServices(allServices);
+                updateServicesCount();
+            } else {
+                console.error("Failed to fetch services.");
+            }
+        });
+    }
+
+        ipcRenderer.on('serviceStatusChanged', (event, data) => {
+            let statusElement = document.getElementById(data.serviceName + '_status');
+            if (statusElement) {
+                if (data.status) {
+                    statusElement.innerText = 'تعمل';
+                    statusElement.className = 'service-status running';
+                } else {
+                    statusElement.innerText = 'متوقفة';
+                    statusElement.className = 'service-status stopped';
+                }
+                updateServicesCount();  // استدعاء الوظيفة هنا
+            }
+        });
+
+        function updateServicesCount() {
+        totalRunningServices = document.querySelectorAll('.service-status.running').length;
+        totalStoppedServices = totalServices - totalRunningServices;  // حساب عدد الخدمات التي لا تعمل
+
+        document.getElementById('totalServices').textContent = totalServices;
+        document.getElementById('runningServices').textContent = totalRunningServices;
+        document.getElementById('stoppedServices').textContent = totalStoppedServices;
+    }
+
+
+        // ... rest of the code remains the same ...
+
+        function displayServices(services) {
+        const servicesListDiv = document.getElementById('servicesList');
+        servicesListDiv.innerHTML = "";
+
+        // خطوة فرز الخدمات
+        services.sort((a, b) => b.status - a.status);
+
+        services.forEach(service => {
+        const serviceCard = document.createElement('div');
+        serviceCard.className = 'service-card';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = "checkbox";
+        checkbox.name = "service";
+        checkbox.value = service.name;
+        checkbox.id = service.name;
+
+        const label = document.createElement('label');
+        label.htmlFor = service.name;
+        label.appendChild(document.createTextNode(service.name));
+
+        const statusIcon = document.createElement('span');
+        statusIcon.id = service.name + '_status';
+        statusIcon.className = service.status ? 'service-status running' : 'service-status stopped';
+        statusIcon.innerText = service.status ? 'تعمل' : 'متوقفة';
+
+        serviceCard.appendChild(checkbox);
+        serviceCard.appendChild(label);
+        serviceCard.appendChild(statusIcon);
+        servicesListDiv.appendChild(serviceCard);
+    });
+    updateServicesCount();
+}
+
+
+
+        // دعوة الوظيفة عند تحميل الصفحة لجلب قائمة الخدمات
+        fetchServices();
+
+        document.getElementById('searchInput').addEventListener('input', function() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+    if (searchTerm === "") {
+        location.reload(); // إعادة تحميل الصفحة
+        return;
+    }
+
+    const filteredServices = allServices.filter(service => service.name.toLowerCase().includes(searchTerm));
+    totalServices = filteredServices.length; // هنا نحدث القيمة
+    displayServices(filteredServices);
+});
+
+
+        function getSelectedServices() {
+        const checkboxes = document.querySelectorAll('#servicesList input[name="service"]:checked');
+        return Array.from(checkboxes).map(checkbox => checkbox.value);
+    }
+        
+        function updateTotalServicesCount() {
+        const totalServices = document.querySelectorAll('.service-card').length;
+        document.getElementById('totalServices').textContent = totalServices;
+    }
+
+    document.getElementById('startButton').addEventListener('click', function() {
+        const servicesToStart = getSelectedServices();
+        servicesToStart.forEach(service => {
+            ipcRenderer.invoke('startService', service).then(result => {
+                console.log(result); // يمكن إضافة تعامل مع الرد هنا
+            });
+        });
+    });
+
+    document.getElementById('stopButton').addEventListener('click', function() {
+        const servicesToStop = getSelectedServices();
+        servicesToStop.forEach(service => {
+            ipcRenderer.invoke('stopService', service).then(result => {
+                console.log(result); // يمكن إضافة تعامل مع الرد هنا
+            });
+        });
+    });
+
+    document.getElementById('restartButton').addEventListener('click', function() {
+        const servicesToRestart = getSelectedServices();
+        servicesToRestart.forEach(service => {
+            ipcRenderer.invoke('restartService', service).then(result => {
+                console.log(result); // يمكن إضافة تعامل مع الرد هنا
+            });
+        });
+    });
+</script>
+</body>
+</html>
