@@ -1,6 +1,6 @@
 {
   "name": "my-electron-app",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "main": "main.js",
   "scripts": {
     "start": "electron main.js"
@@ -10,9 +10,14 @@
       {
         "provider": "github",
         "owner": "satamqx",
-        "repo": "your-repo-name"
+        "repo": "SatamQX-Electron",
+        "releaseType": "draft"
       }
     ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/satamqx/SatamQX-Electron.git"
   },
   "keywords": [],
   "author": "",
