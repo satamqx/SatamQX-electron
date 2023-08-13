@@ -1,11 +1,31 @@
 {
   "name": "my-electron-app",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "start": "electron main.js"
+    "start": "electron main.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
   },
   "build": {
+    "appId": "com.satamqx.sqelectron",
+    "productName": "SatamQX Electron",
+    "directories": {
+      "output": "build"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "renderer.js",
+      "work.png",
+      "not work.png",
+      "icon.ico"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
     "publish": [
       {
         "provider": "github",
@@ -17,13 +37,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/satamqx/SatamQX-Electron.git"
+    "url": "https://github.com/satamqx/SatamQX-electron.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^25.4.0"
+    "electron": "^25.5.0",
+    "electron-builder": "^24.6.3"
   },
   "dependencies": {
     "axios": "^1.4.0",
@@ -37,6 +58,8 @@
     "defer-to-connect": "^2.0.1",
     "define-properties": "^1.2.0",
     "detect-node": "^2.1.0",
+    "discord-rpc": "^4.0.1",
+    "electron-store": "^8.1.0",
     "electron-updater": "^6.1.1",
     "end-of-stream": "^1.4.4",
     "env-paths": "^2.2.1",
@@ -91,5 +114,4 @@
     "yauzl": "^2.10.0"
   },
   "description": ""
-  
 }

@@ -2,3 +2,8 @@ node_modules
 __pycache__
 node_modules/electron/dist/electron.exe
 bfg-1.14.0.jar
+SatamQX-win32-x64
+build
+package-lock.json
+services_manager.py
+winget-test.js

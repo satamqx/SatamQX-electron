@@ -84,7 +84,7 @@
             color: #fff;
             padding: 10px 15px;
             border: none;
-            border-radius: 3px;
+            border-radius: 11px;
             cursor: pointer;
             margin-left: 10px; /* تم تغيير margin-right إلى margin-left */
             transition: background-color 0.3s;
@@ -97,7 +97,7 @@
         input[type="text"] {
             padding: 10px;
             border: none;
-            border-radius: 3px;
+            border-radius: 11px;
             background-color: #2e313b;
             margin-left: 10px; /* تم تغيير margin-right إلى margin-left */
             color: #e1e1e6;
@@ -133,6 +133,79 @@
             background: #4a4c54; /* لون المؤشر عند التحويم */
         }
 
+        .switch-wrapper {
+            display: inline-block;
+            position: relative;
+            width: 96px;
+            height: 30px;
+            margin-right: 27px;
+        }
+
+        .switch-checkbox {
+            display: none;
+        }
+
+        .switch-label {
+            position: absolute;
+            top: 10px;
+            left: 27px;
+            width: 72%;
+            height: 30px;
+            border-radius: 15px;
+            background-color: #ccc;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            font-size: 12px;
+        }
+
+        .switch-button {
+            /* position: absolute; */
+            top: 5px;
+            left: 125px; /* حدد الموقع الابتدائي للزر على اليمين */
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            /* background-color: #fff; */
+            /* transition: left 0.3s; */
+        }
+
+        .switch-checkbox:checked + .switch-label .switch-button {
+            left: 5px; /* عند التحديد، حرك الزر إلى اليسار */
+        }
+
+
+        .switch-checkbox:checked + .switch-label {
+            background-color: #3f51b5;
+        }
+
+        .switch-label img.status-off, .switch-label img.status-on {
+            height: 26px;  /* يمكن تعديل القيمة حسب الحاجة */
+            width: auto;
+            transition: opacity 0.3s;
+        }
+
+        .switch-label img.status-on {
+            opacity: 0; /* تجعل الصورة مخفية في البداية */
+            margin-left: 10px;
+        }
+
+        .switch-label img.status-off {
+            opacity: 1;
+            margin-right: 10px;
+        }
+
+        .switch-checkbox:checked + .switch-label img.status-on {
+            opacity: 1; /* تظهر الصورة عند التحديد */
+        }
+
+        .switch-checkbox:checked + .switch-label img.status-off {
+            opacity: 0; /* تخفي الصورة عند التحديد */
+        }
+
     </style>
 </head>
 
@@ -143,7 +216,31 @@
         <button id="restartButton">اعادة تشغيل الخدمة</button>
         <button id="stopButton">ايقاف الخدمة</button>
         <button id="startButton">تشغيل الخدمة</button>
+        <button id="checkUpdatesButton">تحقق من التحديثات</button>
+
+        <div class="switch-wrapper">
+            <input type="checkbox" id="techSwitch" class="switch-checkbox">
+            <label for="techSwitch" class="switch-label">
+                <img src="./work.png" alt="يعمل" class="status-on">
+                <span class="switch-button"></span>
+                <img src="./not work.png" alt="لا يعمل" class="status-off">
+            </label>
+        </div>
+        
     </div>
+                <!--  خاصية تحديث التطبيق مستقبلا -->
+    <div id="updateNotification" style="display: none; background-color: #3f51b5; padding: 10px; border-radius: 5px; text-align: center; margin-top: 20px;">
+        تم الكشف عن تحديث جديد! يرجى إعادة تشغيل التطبيق لتطبيق التحديثات.
+    </div>
+
+    <div id="upgradableAppsSection" style="display: none; margin-top: 20px;">
+        <h2>التطبيقات القابلة للتحديث:</h2>
+        <ul id="upgradableAppsList">
+            <!-- هذه المنطقة ستمتلئ بتطبيقات قابلة للتحديث بشكل ديناميكي -->
+        </ul>
+        <button id="upgradeAllButton">تحديث الكل</button>
+    </div>
+    
 
     <div id="servicesList">
         <!-- This area will be populated with service cards dynamically -->
@@ -164,20 +261,20 @@
         let totalStoppedServices = 0;
 
         function fetchServices() {
-        ipcRenderer.invoke('getAllServices').then(services => {
-            if (services) {
-                allServices = services;
-                totalServices = allServices.length;
-                // حساب عدد الخدمات التي تعمل
-                totalRunningServices = allServices.filter(service => service.status).length;
-                totalStoppedServices = totalServices - totalRunningServices;
-                displayServices(allServices);
-                updateServicesCount();
-            } else {
-                console.error("Failed to fetch services.");
-            }
-        });
-    }
+            ipcRenderer.invoke('getAllServices').then(services => {
+                if (services) {
+                    allServices = services;
+                    totalServices = allServices.length;
+                    // حساب عدد الخدمات التي تعمل
+                    totalRunningServices = allServices.filter(service => service.status).length;
+                    totalStoppedServices = totalServices - totalRunningServices;
+                    displayServices(allServices);
+                    updateServicesCount();
+                } else {
+                    console.error("Failed to fetch services.");
+                }
+            });
+        }
 
         ipcRenderer.on('serviceStatusChanged', (event, data) => {
             let statusElement = document.getElementById(data.serviceName + '_status');
@@ -194,13 +291,133 @@
         });
 
         function updateServicesCount() {
-        totalRunningServices = document.querySelectorAll('.service-status.running').length;
-        totalStoppedServices = totalServices - totalRunningServices;  // حساب عدد الخدمات التي لا تعمل
+            totalRunningServices = document.querySelectorAll('.service-status.running').length;
+            totalStoppedServices = totalServices - totalRunningServices;  // حساب عدد الخدمات التي لا تعمل
 
-        document.getElementById('totalServices').textContent = totalServices;
-        document.getElementById('runningServices').textContent = totalRunningServices;
-        document.getElementById('stoppedServices').textContent = totalStoppedServices;
+            document.getElementById('totalServices').textContent = totalServices;
+            document.getElementById('runningServices').textContent = totalRunningServices;
+            document.getElementById('stoppedServices').textContent = totalStoppedServices;
+        }
+
+    const servicesToToggle = [
+    'AJRouter',
+    'BITS',
+    'BDESVC',
+    'BraveElevationService',
+    'brave',
+    'bravem',
+    'BraveVpnService',
+    'DiagTrack',
+    'VaultSvc',
+    'DsSvc',
+    'DeviceInstall',
+    'MapsBroker',
+    'fhsvc',
+    'lfsvc',
+    'HvHost',
+    'vmickvpexchange',
+    'vmicguestinterface',
+    'vmicshutdown',
+    'vmicheartbeat',
+    'vmicvmsession',
+    'vmicrdv',
+    'vmictimesync',
+    'vmicvss',
+    'diagnosticshub.standardcollector.service',
+    'wlidsvc',
+    'MicrosoftEdgeElevationService',
+    'edgeupdate',
+    'edgeupdatem',
+    'smphost',
+    'InstallService',
+    'NaturalAuthentication',
+    'NlaSvc',
+    'WpcMonSvc',
+    'SEMgrSvc',
+    'PhoneSvc',
+    'Spooler',
+    'PrintNotify',
+    'RemoteRegistry',
+    'RetailDemo',
+    'LanmanServer',
+    'SCardSvr',
+    'ScDeviceEnum',
+    'SCPolicySvc',
+    'UsoSvc',
+    'upnphost',
+    'WalletService',
+    'TokenBroker',
+    'WbioSrvc',
+    'FrameServer',
+    'FrameServerMonitor',
+    'MixedRealityOpenXRSvc',
+    'WSearch',
+    'wuauserv',
+    'XboxGipSvc',
+    'XblAuthManager',
+    'XblGameSave',
+    'XboxNetApiSvc', /*... واستمر باضافة جميع أسماء الخدمات التي أعطيتها */
+    ];
+    let previouslyRunningServices = [];
+
+    async function initializeRunningServices() {
+    const checkPromises = servicesToToggle.map(service => {
+        return ipcRenderer.invoke('getServiceStatus', service).then(status => {
+            if (status) {
+                previouslyRunningServices.push(service);
+            }
+        });
+    });
+
+    await Promise.all(checkPromises);
+}
+
+initializeRunningServices();  // نستدعي الوظيفة عند بدء التشغيل
+
+document.querySelector(".switch-wrapper").addEventListener("click", async function() {
+    const switchCheckbox = document.getElementById("techSwitch");
+
+    if (switchCheckbox.checked) {
+        // إذا تم تفعيل السويتش
+        const stopPromises = servicesToToggle.map(service => {
+            return ipcRenderer.invoke('stopService', service);
+        });
+
+        await Promise.all(stopPromises);
+    } else {
+        // إذا تم إيقاف السويتش
+        const startPromises = previouslyRunningServices.map(service => {
+            return ipcRenderer.invoke('startService', service);  // قم بتشغيل الخدمات التي كانت تعمل فقط
+        });
+
+        await Promise.all(startPromises);
     }
+});
+
+ipcRenderer.on('prepare-to-close', () => {
+    console.log("Prepare to close function called.");
+
+    const switchCheckbox = document.getElementById("techSwitch");
+    if (switchCheckbox.checked) {  // إذا كان السويتش مفعلاً
+        switchCheckbox.checked = false;  // إيقاف السويتش
+
+        const startPromises = previouslyRunningServices.map(service => {
+            return ipcRenderer.invoke('startService', service).catch(error => {
+                console.error(`Error starting service ${service}:`, error);
+                return null;
+            });
+        });
+
+        Promise.all(startPromises).then(() => {
+            console.log("Attempted to restart services. Sending ready-to-close-app message.");
+            ipcRenderer.send('ready-to-close-app');
+        });
+    } else {
+        console.log("Switch is off. Sending ready-to-close-app message.");
+        ipcRenderer.send('ready-to-close-app');
+    }
+});
+
 
 
         // ... rest of the code remains the same ...
@@ -245,17 +462,17 @@
         fetchServices();
 
         document.getElementById('searchInput').addEventListener('input', function() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
 
-    if (searchTerm === "") {
-        location.reload(); // إعادة تحميل الصفحة
-        return;
-    }
+            if (searchTerm === "") {
+                fetchServices(); // شكرا للأستاذ جفرو اسامة خليفة نشعان العتابي الراقي على حل المشكلة التافة جدا 
+                return;
+            }
 
-    const filteredServices = allServices.filter(service => service.name.toLowerCase().includes(searchTerm));
-    totalServices = filteredServices.length; // هنا نحدث القيمة
-    displayServices(filteredServices);
-});
+        const filteredServices = allServices.filter(service => service.name.toLowerCase().includes(searchTerm));
+            totalServices = filteredServices.length; // هنا نحدث القيمة
+            displayServices(filteredServices);
+        });
 
 
         function getSelectedServices() {
@@ -294,6 +511,45 @@
             });
         });
     });
+    ipcRenderer.on('update-available', () => {
+        document.getElementById('updateNotification').style.display = 'block';
+    });
+
+    document.getElementById('checkUpdatesButton').addEventListener('click', function() {
+    ipcRenderer.invoke('checkUpgradableApps').then(apps => {
+        const upgradableAppsList = document.getElementById('upgradableAppsList');
+        upgradableAppsList.innerHTML = "";
+
+        apps.forEach(app => {
+            const listItem = document.createElement('li');
+            listItem.innerText = `${app.name} (v${app.version} -> v${app.availableVersion})`;
+            upgradableAppsList.appendChild(listItem);
+        });
+
+        if (apps.length > 0) {
+            document.getElementById('upgradableAppsSection').style.display = 'block';
+        } else {
+            alert('لا يوجد تحديثات متاحة.');
+        }
+    }).catch(error => {
+        console.error("Error checking upgradable apps:", error);
+        alert('حدث خطأ أثناء التحقق من التحديثات. يرجى المحاولة مرة أخرى.');
+    });
+});
+
+
+
+document.getElementById('upgradeAllButton').addEventListener('click', function() {
+    ipcRenderer.invoke('upgradeAllApps').then(message => {
+        alert(message);
+        document.getElementById('upgradableAppsSection').style.display = 'none';
+    }).catch(error => {
+        console.error("Error upgrading apps:", error);
+        alert('حدث خطأ أثناء التحديث. يرجى المحاولة مرة أخرى.');
+    });
+});
+
+
 </script>
 </body>
 </html>
